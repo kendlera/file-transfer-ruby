@@ -3,11 +3,11 @@
 
 require 'net/http'
 # do we still need net/http if we're using httparty instead?
-require 'httparty'
+# require 'httparty'
 
 def print_help()
 	# script usage message
-	puts "Transfer files securely to/from local to dropbox!"
+	puts "Transfer files securely to/from local and Dropbox!"
 	puts "Usage: ruby dropbox_transfer.rb <direction flag> <src> <dst>"
 	puts "\t<direction flag> must be either -u (upload to dropbox) or -d (download from dropbox)"
 	puts "\t<src> is the file you want to move; NOTE: cannot move files greater than 350GB"
@@ -31,7 +31,7 @@ def parse_inputs()
 	params = []
 	ARGV.each do |arg|
 		if arg == "-u" || arg == "-d"
-			if dir != nil
+			if dir == nil
 				dir = arg[1]
 			else
 				puts "error: can only specify one direction '-u' or '-d'"
@@ -68,8 +68,8 @@ def upload(src, dst)
 	# A single request should not upload more than 150 MB. 
 	# The maximum size of a file one can upload to an upload session is 350 GB.
 
-	# check if src is greater than 350 GB
-	if "file size" > 350gb
+	# check if src is greater than or equal to 350 GB
+	if File.size(src) >= 350000000000
 		puts "error: local file is too large to upload"
 		return false
 	end
@@ -83,15 +83,17 @@ def upload(src, dst)
 	session_id = nil
 	# upload file
 	upload_endpoint = "append_v2"
-	upload_uri = URI(base_url+upload_endpoint)
-	upload_uri.query = URI.encode_www_form()
 	close = false
 	while "unsent data" > 0 do 
-		if "unsent data" < 150mb
+		if "unsent data" < "150mb"
 			close = true
 		end
 		# send data here
+		upload_uri = URI(base_url+upload_endpoint)
+		upload_uri.query = URI.encode_www_form({ "next 150mb of data", "close" => close })
+		response = Net::HTTP.get_response(upload_uri)
 	end
+	return true
 end
 
 def download(src, dst)
@@ -106,11 +108,11 @@ def transfer_files()
 		return nil
 	end
 	if inputs[2] == "u"
-		if !File.file(inputs[0])
+		if !File.file?(inputs[0])
 			puts "error: unable to find local source file"
 			return nil 
 		end
-		if !"dst directory exists"
+		if !true # remote file does exist
 			puts "error: remote destination does not exist"
 			return nil 
 		end
@@ -120,10 +122,12 @@ def transfer_files()
 			puts "error: local destination does not exist"
 			return nil
 		end
-		if !"src file exists"
+		if !true # remote file does exist
 			puts "error: remote file does not exist" 
 			return nil
 		end 
 		download(inputs[0], inputs[1])
 	end
 end
+
+transfer_files()
