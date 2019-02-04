@@ -1,0 +1,29 @@
+Transfer files securely to/from local and Dropbox!
+Usage: ruby dropbox_transfer.rb <direction flag> <src> <dst>
+	<direction flag> must be either -u (upload to dropbox) or -d (download from dropbox)
+	<src> is the file you want to move; NOTE: cannot move files greater than 350GB
+	<dst> is the desired destination of the file
+
+This script in ruby is designed to transfer individual files to and from the user's dropbox instance
+
+CURRENT STATE
+- reads and parses user inputs
+- checks the existance of local file
+- reads in the local file in dropbox-approved chunks
+
+
+TODO:
+Dropbox authentication
+	- either prompt the user for credentials or allow them to specify some config file perhaps
+
+Fix the http requests needed
+	CURRENT STATE: some rough pseudocode in place, untested
+
+upload function
+	- http functionality untested and incomplete
+
+download function
+	- check existance of local directory
+	- check existence of remote file 
+	- request remote file contents
+	- write file content to local location

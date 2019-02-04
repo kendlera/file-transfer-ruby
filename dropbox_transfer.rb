@@ -2,8 +2,6 @@
 # 01/27/19
 
 require 'net/http'
-# do we still need net/http if we're using httparty instead?
-# require 'httparty'
 
 def print_help()
 	# script usage message
@@ -78,21 +76,31 @@ def upload(src, dst)
 	base_url = "https://content.dropboxapi.com/2/files/upload_session/"
 	start_endpoint = "start"
 	start_uri = URI(base_url+start_endpoint)
-	start_uri.query = URI.encode_www_form()
 	response = Net::HTTP.get_response(start_uri)
 	session_id = nil
 	# upload file
 	upload_endpoint = "append_v2"
 	close = false
-	while "unsent data" > 0 do 
-		if "unsent data" < "150mb"
+	fd = IO.sysopen(src)
+	io_reader = IO.new(fd)
+	while !close do 
+		begin
+			file_content_chunk = io_reader.sysread(140000000) # read in 140 MB at a time since 150 is the cut off
+			puts file_content_chunk
+		rescue EOFError
+			# there is no more data to read 
+			close = true
+		end
+		if file_content_chunk.length < 140000000
+			# there was less than our maximum chunk size of data
 			close = true
 		end
 		# send data here
 		upload_uri = URI(base_url+upload_endpoint)
-		upload_uri.query = URI.encode_www_form({ "next 150mb of data", "close" => close })
+		upload_uri.query = URI.encode_www_form({ "content" => file_content_chunk, "close" => close })
 		response = Net::HTTP.get_response(upload_uri)
 	end
+	io_reader.close
 	return true
 end
 
